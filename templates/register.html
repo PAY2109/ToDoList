@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register</title>
+</head>
+<body>
+
+{% for category, message in  get_flashed_messages(with_categories=true) %}
+    <spam class="{{ category }}">{{ message }}</spam>
+{% endfor %}
+
+<form action="" method="post">
+    {{ form.csrf_token }}
+    <p>
+        {{ form.name.label() }}
+        {{ form.name() }}
+        {% if form.name.errors %}
+            {% for error in form.name.errors %}
+                {{ error }}
+            {% endfor %}
+        {% endif %}
+    </p>
+    <p>
+        {{ form.email.label() }}
+        {{ form.email() }}
+        {% if form.email.errors %}
+            {% for error in form.email.errors %}
+                {{ error }}
+            {% endfor %}
+        {% endif %}
+    </p>
+    <p>
+        {{ form.username.label() }}
+        {{ form.username() }}
+        {% if form.username.errors %}
+            {% for error in form.username.errors %}
+                {{ error }}
+            {% endfor %}
+        {% endif %}
+    </p>
+    <p>
+        {{ form.password.label() }}
+        {{ form.password() }}
+        {% if form.password.errors %}
+            {% for error in form.password.errors %}
+                {{ error }}
+            {% endfor %}
+        {% endif %}
+    </p>
+    <p>
+        {{ form.repeat_password.label() }}
+        {{ form.repeat_password() }}
+        {% if form.repeat_password.errors %}
+            {% for error in form.repeat_password.errors %}
+                {{ error }}
+            {% endfor %}
+        {% endif %}
+    </p>
+    <p>
+        {{ form.submit() }}
+    </p>
+</form>
+
+</body>
+</html>
