@@ -26,5 +26,10 @@ class RegisterForm(FlaskForm):
     submit = SubmitField()
 
 class DeleteForm(FlaskForm):
+    title = StringField("Enter title of the note to delete it", validators=[DataRequired()])
+    submit = SubmitField("Delete")
+
+class NewNoteForm(FlaskForm):
     title = StringField("Title", validators=[DataRequired()])
-    submit = SubmitField()
+    description = TextAreaField("Description")
+    submit = SubmitField("Save note")

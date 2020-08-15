@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>New note</title>
+</head>
+<body>
+{% for category, message in  get_flashed_messages(with_categories=true) %}
+    <spam class="{{ category }}">{{ message }}</spam>
+{% endfor %}
+<form action="" method="post">
+    {{ add_form.csrf_token }}
+    <p>
+        {{ add_form.title.label() }}
+        {{ add_form.title() }}
+        {% if add_form.title.errors %}
+            {% for error in add_form.title.errors %}
+                {{ error }}
+            {% endfor %}
+        {% endif %}
+    </p>
+    <p>
+        {{ add_form.description.label() }}
+        {{ add_form.description() }}
+        {% if add_form.description.errors %}
+            {% for error in add_form.description.errors %}
+                {{ error }}
+            {% endfor %}
+        {% endif %}
+    </p>
+    <p>
+        {{ add_form.submit() }}
+    </p>
+</form>
+<p><a href="{{ url_for('.profile') }}">Cancel</a></p>
+</body>
+</html>

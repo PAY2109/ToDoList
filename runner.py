@@ -1,11 +1,11 @@
+import os
+
 from flask import Flask
-
-
 from flask_script import Manager, Shell
 from flask_migrate import MigrateCommand
 from flask import render_template, request, redirect, url_for, flash, make_response, session
 from flask_login import login_required, login_user,current_user, logout_user
-from forms import ContactForm, LoginForm, RegisterForm, DeleteForm
+from forms import ContactForm, LoginForm, RegisterForm, DeleteForm, NewNoteForm
 from datetime import datetime
 from flask_login import (LoginManager, UserMixin, login_required,
                          login_user, current_user, logout_user)
@@ -13,8 +13,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'dajkdjakdjskdjiajfoadioafioasofajdsajf'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:12345@localhost/flask_app_db'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URI')
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 manager = Manager(app)
@@ -83,8 +83,6 @@ class Employee(db.Model):
     doj = db.Column(db.Date(), nullable=False)
 
 
-
-
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.query(User).get(user_id)
@@ -131,9 +129,6 @@ manager.add_command('shell', Shell(make_context=make_shell_context))
 manager.add_command('db', MigrateCommand)
 
 
-
-
-
 @app.route('/')
 def index():
     return render_template('index.html', name='Jerry')
@@ -177,10 +172,7 @@ def register():
         return redirect(url_for('profile'))
     form = RegisterForm()
     if form.validate_on_submit():
-        # password = form.password.data
-        # repeat_password = form.repeat_password.data
-        # print(password is repeat_password)
-        # print(password == repeat_password)
+
         if form.password.data != form.repeat_password.data:
             flash("Passwords do not match", 'error')
             return redirect(url_for('register'))
@@ -194,7 +186,6 @@ def register():
         email = form.email.data
         password_hash = generate_password_hash(form.password.data)
         username = form.username.data
-        # здесь логика БД
         user = User(name=name, email=email, password_hash = password_hash, username = username)
         db.session.add(user)
         db.session.commit()
@@ -211,13 +202,9 @@ def contact():
         email = form.email.data
         message = form.message.data
 
-        # здесь логика БД
         feedback = Feedback(name=name, email=email, message=message)
         db.session.add(feedback)
         db.session.commit()
-
-        # send_mail("New Feedback", app.config['MAIL_DEFAULT_SENDER'], 'mail/feedback.html',
-        #           name=name, email=email)
 
         flash("Message Received", "success")
         return redirect(url_for('contact'))
@@ -280,10 +267,8 @@ def updating_session():
         session['cart_item'] = cart_item
     return res
 
-# import things
+
 from flask_table import Table, Col
-import json
-# Declare your table
 class ItemTable(Table):
     title = Col('Title')
     description = Col('Description')
@@ -292,28 +277,25 @@ class ItemTable(Table):
 @login_required
 def profile():
     notes = db.session.query(Note).filter(Note.owner == current_user.username).first()
-    form = DeleteForm()
+    delete_form = DeleteForm()
     table_rows = []
     if notes and notes.data is not None:
         items = notes.data
-        print(items)
         for key in items:
             table_rows.append(dict(title=key, description = items[key]))
     table = ItemTable(table_rows)
-    # print(table.__html__())
-    return render_template('profile.html', note_table = table, delete_form = form)
+    return render_template('profile.html', note_table = table, delete_form = delete_form)
 
 @app.route('/profile/', methods=['POST'])
 @login_required
 def delete_note():
     notes = db.session.query(Note).filter(Note.owner == current_user.username).first()
-    form = DeleteForm()
-    if form.validate_on_submit():
+    delete_form = DeleteForm()
+    if delete_form.validate_on_submit():
         if notes and notes.data is not None:
             items = notes.data
-            title = form.title.data
+            title = delete_form.title.data
             del items[title]
-            # здесь логика БД
             new_notes = Note(owner=current_user.username, data=items)
             db.session.delete(notes)
             db.session.add(new_notes)
@@ -322,6 +304,26 @@ def delete_note():
             return redirect(url_for('profile'))
     return redirect(url_for('profile'))
 
+@app.route('/new_note/', methods=['GET','POST'])
+@login_required
+def new_note():
+    notes = db.session.query(Note).filter(Note.owner == current_user.username).first()
+    new_note_form = NewNoteForm()
+    if new_note_form.validate_on_submit():
+        if notes and notes.data is not None:
+            items = notes.data
+            db.session.delete(notes)
+        else:
+            items = {}
+        title = new_note_form.title.data
+        description = new_note_form.description.data
+        items[title] = description
+        new_notes = Note(owner=current_user.username, data=items)
+        db.session.add(new_notes)
+        db.session.commit()
+        flash("Successfully saved new note", 'error')
+        return redirect(url_for('profile'))
+    return render_template('new_note.html', add_form = new_note_form)
 
 db.create_all()
 if __name__ == '__main__':

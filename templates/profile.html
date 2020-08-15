@@ -5,8 +5,13 @@
     <title>Profile</title>
 </head>
 <body>
-
-<h2>Logged in User details</h2>
+{% for category, message in  get_flashed_messages(with_categories=true) %}
+    <spam class="{{ category }}">{{ message }}</spam>
+{% endfor %}
+<h2>Your profile</h2>
+<h3>Add note</h3>
+<p><a href="{{ url_for('.new_note') }}">Add new note</a></p>
+<h3>Delete note</h3>
 <form action="" method="post">
     {{ delete_form.csrf_token }}
     <p>
@@ -22,7 +27,9 @@
         {{ delete_form.submit() }}
     </p>
 </form>
+<h3>Notes</h3>
 {{ note_table }}
+<h3>User information</h3>
 <ul>
     <li>Username: {{ current_user.username }}</li>
     <li>Email: {{ current_user.email }}</li>
