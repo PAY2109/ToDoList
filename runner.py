@@ -136,7 +136,7 @@ def register():
 
 
 @app.route('/feedback/', methods=['get', 'post'])
-def contact():
+def leave_feedback():
     form = ContactForm()
     if form.validate_on_submit():
         name = form.name.data
@@ -148,7 +148,7 @@ def contact():
         db.session.commit()
 
         flash("Message Received", "success")
-        return redirect(url_for('feedback'))
+        return redirect(url_for('leave_feedback'))
 
     return render_template('feedback.html', form=form)
 
