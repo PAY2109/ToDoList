@@ -15,52 +15,11 @@ from flask_sqlalchemy import SQLAlchemy
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URI')
+app.config['DEBUG'] = os.environ.get('DEBUG')
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 manager = Manager(app)
 db = SQLAlchemy(app)
-
-class Category(db.Model):
-    __tablename__ = 'categories'
-    id = db.Column(db.Integer(), primary_key=True)
-    name = db.Column(db.String(255), nullable=False, unique=True)
-    slug = db.Column(db.String(255), nullable=False, unique=True)
-    created_on = db.Column(db.DateTime(), default=datetime.utcnow)
-    posts = db.relationship('Post', backref='category', cascade='all,delete-orphan')
-
-    def __repr__(self):
-        return "<{}:{}>".format(self.id, self.name)
-
-
-post_tags = db.Table('post_tags',
-                     db.Column('post_id', db.Integer, db.ForeignKey('posts.id')),
-                     db.Column('tag_id', db.Integer, db.ForeignKey('tags.id'))
-                     )
-
-
-class Post(db.Model):
-    __tablename__ = 'posts'
-    id = db.Column(db.Integer(), primary_key=True)
-    title = db.Column(db.String(255), nullable=False)
-    slug = db.Column(db.String(255), nullable=False)
-    content = db.Column(db.Text(), nullable=False)
-    created_on = db.Column(db.DateTime(), default=datetime.utcnow)
-    updated_on = db.Column(db.DateTime(), default=datetime.utcnow)
-    category_id = db.Column(db.Integer(), db.ForeignKey('categories.id'))
-
-    def __repr__(self):
-        return "<{}:{}>".format(self.id, self.title[:10])
-
-
-class Tag(db.Model):
-    __tablename__ = 'tags'
-    id = db.Column(db.Integer(), primary_key=True)
-    name = db.Column(db.String(255), nullable=False)
-    slug = db.Column(db.String(255), nullable=False)
-    created_on = db.Column(db.DateTime(), default=datetime.utcnow)
-    posts = db.relationship('Post', secondary=post_tags, backref='tags')
-    def __repr__(self):
-        return "<{}:{}>".format(self.id, self.name)
 
 
 class Feedback(db.Model):
@@ -74,13 +33,6 @@ class Feedback(db.Model):
     def __repr__(self):
         return "<{}:{}>".format(self.id, self.name)
 
-
-class Employee(db.Model):
-    __tablename__ = 'employees'
-    id = db.Column(db.Integer(), primary_key=True)
-    name = db.Column(db.String(255), nullable=False)
-    designation = db.Column(db.String(255), nullable=False)
-    doj = db.Column(db.Date(), nullable=False)
 
 
 @login_manager.user_loader
@@ -122,8 +74,7 @@ class Note(db.Model):
 
 
 def make_shell_context():
-    return dict(app=app,  User=User, Post=Post, Tag=Tag, Category=Category,
-                Employee=Employee, Feedback=Feedback)
+    return dict(app=app,  User=User, Note=Note, Feedback=Feedback)
 
 manager.add_command('shell', Shell(make_context=make_shell_context))
 manager.add_command('db', MigrateCommand)
@@ -131,17 +82,7 @@ manager.add_command('db', MigrateCommand)
 
 @app.route('/')
 def index():
-    return render_template('index.html', name='Jerry')
-
-
-@app.route('/user/<int:user_id>/')
-def user_profile(user_id):
-    return "Profile page of user #{}".format(user_id)
-
-
-@app.route('/books/<genre>/')
-def books(genre):
-    return "All Books in {} category".format(genre)
+    return redirect(url_for('profile'))
 
 
 @app.route('/login/', methods=['post', 'get'])
@@ -194,7 +135,7 @@ def register():
     return render_template('register.html', form=form)
 
 
-@app.route('/contact/', methods=['get', 'post'])
+@app.route('/feedback/', methods=['get', 'post'])
 def contact():
     form = ContactForm()
     if form.validate_on_submit():
@@ -207,37 +148,9 @@ def contact():
         db.session.commit()
 
         flash("Message Received", "success")
-        return redirect(url_for('contact'))
+        return redirect(url_for('feedback'))
 
-    return render_template('contact.html', form=form)
-
-
-@app.route('/cookie/')
-def cookie():
-    if not request.cookies.get('foo'):
-        res = make_response("Setting a cookie")
-        res.set_cookie('foo', 'bar', max_age=60*60*24*365*2)
-    else:
-        res = make_response("Value of cookie foo is {}".format(request.cookies.get('foo')))
-    return res
-
-
-@app.route('/delete-cookie/')
-def delete_cookie():
-    res = make_response("Cookie Removed")
-    res.set_cookie('foo', 'bar', max_age=0)
-    return res
-
-
-@app.route('/article', methods=['POST', 'GET'])
-def article():
-    if request.method == 'POST':
-        res = make_response("")
-        res.set_cookie("font", request.form.get('font'), 60*60*24*15)
-        res.headers['location'] = url_for('article')
-        return res, 302
-
-    return render_template('article.html')
+    return render_template('feedback.html', form=form)
 
 
 @app.route('/visits-counter/')
@@ -254,18 +167,6 @@ def delete_visits():
     session.pop('visits', None)  # удаление посещений
     return 'Visits deleted'
 
-
-@app.route('/session/')
-def updating_session():
-    res = str(session.items())
-
-    cart_item = {'pineapples': '10', 'apples': '20', 'mangoes': '30'}
-    if 'cart_item' in session:
-        session['cart_item']['pineapples'] = '100'
-        session.modified = True
-    else:
-        session['cart_item'] = cart_item
-    return res
 
 
 from flask_table import Table, Col
