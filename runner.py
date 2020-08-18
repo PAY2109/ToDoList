@@ -152,23 +152,6 @@ def leave_feedback():
 
     return render_template('feedback.html', form=form)
 
-
-@app.route('/visits-counter/')
-def visits():
-    if 'visits' in session:
-        session['visits'] = session.get('visits') + 1
-    else:
-        session['visits'] = 1
-    return "Total visits: {}".format(session.get('visits'))
-
-
-@app.route('/delete-visits/')
-def delete_visits():
-    session.pop('visits', None)  # удаление посещений
-    return 'Visits deleted'
-
-
-
 from flask_table import Table, Col
 class ItemTable(Table):
     title = Col('Title')
@@ -225,6 +208,10 @@ def new_note():
         flash("Successfully saved new note", 'error')
         return redirect(url_for('profile'))
     return render_template('new_note.html', add_form = new_note_form)
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
 
 db.create_all()
 if __name__ == '__main__':
